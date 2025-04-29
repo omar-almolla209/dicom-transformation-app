@@ -27,13 +27,17 @@ st.title("🧠 Analisi Batch di Immagini DICOM per Supporto Clinico")
 uploaded_files = st.file_uploader("📤 Carica uno o più file DICOM", type=["dcm"], accept_multiple_files=True)
 
 if uploaded_files:
-    images = []
-    filenames = []
-    for uploaded_file in uploaded_files:
-        dcm = pydicom.dcmread(uploaded_file)
-        img = dcm.pixel_array
-        images.append(img)
-        filenames.append(os.path.splitext(uploaded_file.name)[0])
+    # Carica immagini solo se non sono già in sessione
+    if 'images' not in st.session_state or st.session_state.get('last_uploaded') != uploaded_files:
+        st.session_state.images = []
+        st.session_state.filenames = []
+        for uploaded_file in uploaded_files:
+            dcm = pydicom.dcmread(uploaded_file)
+            img = dcm.pixel_array
+            st.session_state.images.append(img)
+            st.session_state.filenames.append(os.path.splitext(uploaded_file.name)[0])
+        st.session_state.current_index = 0
+        st.session_state.last_uploaded = uploaded_files
 
     # Checkbox per selezionare trasformazioni
     st.sidebar.header("🔧 Seleziona Trasformazioni da Applicare")
@@ -43,9 +47,6 @@ if uploaded_files:
     do_sharp = st.sidebar.checkbox("Filtro Unsharp Mask (Velvet-like)")
     do_overlay = st.sidebar.checkbox("Overlay dei bordi Canny")
 
-    if 'current_index' not in st.session_state:
-        st.session_state.current_index = 0
-
     # Pulsanti di navigazione
     col1, col2, col3 = st.columns([1,2,1])
     with col1:
@@ -54,15 +55,15 @@ if uploaded_files:
                 st.session_state.current_index -= 1
     with col3:
         if st.button("Next ➡️"):
-            if st.session_state.current_index < len(images) - 1:
+            if st.session_state.current_index < len(st.session_state.images) - 1:
                 st.session_state.current_index += 1
 
-    img = images[st.session_state.current_index]
-    base_filename = filenames[st.session_state.current_index]
+    img = st.session_state.images[st.session_state.current_index]
+    base_filename = st.session_state.filenames[st.session_state.current_index]
     img_norm = (img - np.min(img)) / (np.max(img) - np.min(img))
     img_uint8 = img_as_ubyte(img_norm)
 
-    st.subheader(f"🖼️ Immagine {st.session_state.current_index + 1} di {len(images)} - {base_filename}")
+    st.subheader(f"🖼️ Immagine {st.session_state.current_index + 1} di {len(st.session_state.images)} - {base_filename}")
     fig, ax = plt.subplots(figsize=(6,6))
     ax.imshow(img, cmap='gray')
     ax.set_title("Immagine DICOM Originale")
@@ -124,8 +125,7 @@ if uploaded_files:
         plt.close()
 
     if do_overlay:
-        if 'edges_canny' not in locals():
-            edges_canny = canny(img_norm, sigma=1)
+        edges_canny = canny(img_norm, sigma=1)
         overlay = np.stack([img_norm]*3, axis=-1)
         overlay[edges_canny, 0] = 1
         overlay[edges_canny, 1] = 0
