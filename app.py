@@ -21,7 +21,7 @@ def salva_fig(path_output, fig=None):
 
 # Titolo interfaccia
 st.set_page_config(layout="wide")
-st.title("🧐 Analisi Batch di Immagini DICOM per Supporto Clinico")
+st.title("🧠 Analisi Batch di Immagini DICOM per Supporto Clinico")
 
 # Upload multiplo file DICOM
 uploaded_files = st.file_uploader("📤 Carica uno o più file DICOM", type=["dcm"], accept_multiple_files=True)
@@ -43,15 +43,26 @@ if uploaded_files:
     do_sharp = st.sidebar.checkbox("Filtro Unsharp Mask (Velvet-like)")
     do_overlay = st.sidebar.checkbox("Overlay dei bordi Canny")
 
-    # Slider per scegliere quale immagine visualizzare
-    index = st.slider('Seleziona immagine', 0, len(images) - 1, 0)
+    if 'current_index' not in st.session_state:
+        st.session_state.current_index = 0
 
-    img = images[index]
-    base_filename = filenames[index]
+    # Pulsanti di navigazione
+    col1, col2, col3 = st.columns([1,2,1])
+    with col1:
+        if st.button("⬅️ Previous"):
+            if st.session_state.current_index > 0:
+                st.session_state.current_index -= 1
+    with col3:
+        if st.button("Next ➡️"):
+            if st.session_state.current_index < len(images) - 1:
+                st.session_state.current_index += 1
+
+    img = images[st.session_state.current_index]
+    base_filename = filenames[st.session_state.current_index]
     img_norm = (img - np.min(img)) / (np.max(img) - np.min(img))
     img_uint8 = img_as_ubyte(img_norm)
 
-    st.subheader(f"📸 Immagine Originale - {base_filename}")
+    st.subheader(f"🖼️ Immagine {st.session_state.current_index + 1} di {len(images)} - {base_filename}")
     fig, ax = plt.subplots(figsize=(6,6))
     ax.imshow(img, cmap='gray')
     ax.set_title("Immagine DICOM Originale")
