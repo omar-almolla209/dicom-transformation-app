@@ -21,41 +21,47 @@ def salva_fig(path_output, fig=None):
 
 # Titolo interfaccia
 st.set_page_config(layout="wide")
-st.title("🧠 Analisi Immagini DICOM – Supporto Visivo per Medici")
+st.title("🧐 Analisi Batch di Immagini DICOM per Supporto Clinico")
 
-# Upload file DICOM
-uploaded_file = st.file_uploader("📤 Carica un file DICOM", type=["dcm"])
+# Upload multiplo file DICOM
+uploaded_files = st.file_uploader("📤 Carica uno o più file DICOM", type=["dcm"], accept_multiple_files=True)
 
-if uploaded_file:
-    dcm = pydicom.dcmread(uploaded_file)
-    img = dcm.pixel_array
+if uploaded_files:
+    images = []
+    filenames = []
+    for uploaded_file in uploaded_files:
+        dcm = pydicom.dcmread(uploaded_file)
+        img = dcm.pixel_array
+        images.append(img)
+        filenames.append(os.path.splitext(uploaded_file.name)[0])
+
+    # Checkbox per selezionare trasformazioni
+    st.sidebar.header("🔧 Seleziona Trasformazioni da Applicare")
+    do_entropy = st.sidebar.checkbox("Mappa di Entropia Locale")
+    do_edges = st.sidebar.checkbox("Edge Detection: Sobel, Laplaciano, Canny")
+    do_eq = st.sidebar.checkbox("Equalizzazione Istogramma")
+    do_sharp = st.sidebar.checkbox("Filtro Unsharp Mask (Velvet-like)")
+    do_overlay = st.sidebar.checkbox("Overlay dei bordi Canny")
+
+    # Slider per scegliere quale immagine visualizzare
+    index = st.slider('Seleziona immagine', 0, len(images) - 1, 0)
+
+    img = images[index]
+    base_filename = filenames[index]
     img_norm = (img - np.min(img)) / (np.max(img) - np.min(img))
     img_uint8 = img_as_ubyte(img_norm)
 
-    st.subheader("📸 Immagine Originale")
+    st.subheader(f"📸 Immagine Originale - {base_filename}")
     fig, ax = plt.subplots(figsize=(6,6))
     ax.imshow(img, cmap='gray')
     ax.set_title("Immagine DICOM Originale")
     ax.axis('off')
     st.pyplot(fig)
 
-
-    # Checkbox per ogni trasformazione
-    col1, col2 = st.columns(2)
-    with col1:
-        do_entropy = st.checkbox("Mappa di Entropia Locale")
-        do_edges = st.checkbox("Edge Detection: Sobel, Laplaciano, Canny")
-        do_overlay = st.checkbox("Overlay dei bordi Canny")
-
-    with col2:
-        do_eq = st.checkbox("Equalizzazione Istogramma")
-        do_sharp = st.checkbox("Filtro Unsharp Mask (Velvet-like)")
-
-    base_filename = os.path.splitext(uploaded_file.name)[0]
     output_dir = "transformations"
     os.makedirs(output_dir, exist_ok=True)
 
-    # Esecuzione trasformazioni selezionate
+    # Applica trasformazioni selezionate
     if do_entropy:
         entropia = entropy(img_uint8, disk(5))
         plt.figure(figsize=(6,6))
@@ -120,3 +126,6 @@ if uploaded_file:
         salva_fig(f'{output_dir}/{base_filename}_overlay_edges_on_original.png')
         st.pyplot(plt)
         plt.close()
+
+else:
+    st.info("📤 Carica uno o più file DICOM per iniziare.")
