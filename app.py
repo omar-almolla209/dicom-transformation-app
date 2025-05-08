@@ -24,7 +24,7 @@ st.set_page_config(layout="wide")
 st.title("🧠 Analisi Immagini DICOM – Supporto Visivo per Medici")
 
 # Upload file DICOM - MODIFICATO QUI per includere 'dmc'
-uploaded_file = st.file_uploader("📤 Carica un file DICOM", type=["dcm", "dmc"])
+uploaded_file = st.file_uploader("📤 Carica un file DICOM", type=["dcm", "dmc", "DCM"])
 
 if uploaded_file:
     try:
