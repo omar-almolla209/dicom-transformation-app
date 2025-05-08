@@ -24,7 +24,7 @@ st.set_page_config(layout="wide")
 st.title("🧠 DICOM Batch Viewer & Processing")
 
 # Upload multiplo file DICOM
-uploaded_files = st.file_uploader("📤 Carica uno o più file DICOM", type=["dcm"], accept_multiple_files=True)
+uploaded_files = st.file_uploader("📤 Carica uno o più file DICOM", type=None, accept_multiple_files=True)
 
 # Selezione trasformazioni
 st.sidebar.header("🔧 Seleziona Trasformazioni da Applicare")
